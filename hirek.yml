@@ -1,0 +1,30 @@
+name: 📰 Európai Hírlap – Napi küldés
+
+on:
+  schedule:
+    # 08:00 UTC = 09:00 CET (téli idő) / 10:00 CEST (nyári idő → módosítsd 07:00-ra)
+    - cron: '0 8 * * *'
+  workflow_dispatch:   # Kézi indítás is lehetséges
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python beállítás
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Függőségek telepítése
+        run: pip install anthropic
+
+      - name: Napi hírek küldése
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_USER:        ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS:    ${{ secrets.GMAIL_APP_PASS }}
+        run: python daily_news.py
