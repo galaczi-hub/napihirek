@@ -13,9 +13,9 @@ from email.mime.text import MIMEText
 import anthropic
 
 # KONFIGURÁCIÓ
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-GMAIL_USER        = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com")
-GMAIL_APP_PASS    = os.environ.get("GMAIL_APP_PASS", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+GMAIL_USER        = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
+GMAIL_APP_PASS    = os.environ.get("GMAIL_APP_PASS", "").strip()
 TO_EMAIL          = "galaczi.usa@gmail.com"
 
 
