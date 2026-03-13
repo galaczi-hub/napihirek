@@ -16,7 +16,7 @@ import anthropic
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
 GMAIL_USER        = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
 GMAIL_APP_PASS    = os.environ.get("GMAIL_APP_PASS", "").strip()
-TO_EMAIL          = "galaczi.usa@gmail.com"
+TO_EMAIL          = "galaczi.usa@gmail.com, gorcsi.kata@gmail.com"
 
 
 SYSTEM_PROMPT = """
