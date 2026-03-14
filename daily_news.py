@@ -18,7 +18,7 @@ from email.mime.text import MIMEText
 GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "").strip()
 GMAIL_USER     = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
 GMAIL_APP_PASS = os.environ.get("GMAIL_APP_PASS", "").strip()
-TO_EMAILS      = ["galaczi.usa@gmail.com"]  # Ide add hozzá a második email címet pl: TO_EMAILS = ["galaczi.usa@gmail.com", "masik@email.com"]
+TO_EMAILS      = ["galaczi.usa@gmail.com", "gorsi.kata@gmail.com"]  # Ide add hozzá a második email címet pl: TO_EMAILS = ["galaczi.usa@gmail.com", "masik@email.com"]
 
 SYSTEM_PROMPT = """
 Te egy professzionalis europai hirszerkeszto vagy. A feladatod:
