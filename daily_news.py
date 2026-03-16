@@ -114,7 +114,9 @@ CSAK JSON tomb, semmi mas."""
             print(f"JSON sikeresen parsed: {len(result)} elem")
             return result
         except Exception as e:
-            print(f"Groq hiba ({attempt+1}/3): {e}")
+    import traceback
+    print(f"Groq hiba ({attempt+1}/3): {e}")
+    print(traceback.format_exc())
             if attempt < 2:
                 time.sleep(10)
     return []
