@@ -75,17 +75,36 @@ def get_news_from_groq(date_str):
         "Content-Type": "application/json"
     }
 
-    response = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
-        headers=headers,
-        json=payload,
-        timeout=180
-    )
-    response.raise_for_status()
-    data = response.json()
+    # Retry logika - 3 probalkozas, fallback modellel
+    models = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
+    last_error = None
 
-    message = data["choices"][0]["message"]
-    full_text = message.get("content", "") or ""
+    for attempt in range(3):
+        try:
+            model = models[0] if attempt < 2 else models[1]
+            payload["model"] = model
+            print(f"Probalkozas {attempt+1}/3, modell: {model}")
+
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=120
+            )
+            response.raise_for_status()
+            data = response.json()
+            message = data["choices"][0]["message"]
+            full_text = message.get("content", "") or ""
+            if full_text.strip():
+                break
+        except Exception as e:
+            last_error = e
+            print(f"Hiba a {attempt+1}. probalkozasnal: {e}")
+            if attempt < 2:
+                import time
+                time.sleep(10)
+    else:
+        raise last_error
 
     print(f"Response length: {len(full_text)} chars")
     print(f"First 300 chars: {full_text[:300]}")
