@@ -18,7 +18,7 @@ GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "").strip()
 NEWS_API_KEY   = os.environ.get("NEWS_API_KEY", "").strip()
 GMAIL_USER     = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
 GMAIL_APP_PASS = os.environ.get("GMAIL_APP_PASS", "").strip()
-TO_EMAILS      = ["galaczi.usa@gmail.com", "gorsi.kata@gmail.com"]
+TO_EMAILS      = ["galaczi.usa@gmail.com", "kata.gorcsi@gmail.com"]
 
 ICONS      = {"econ":"📈","eu":"🇪🇺","war":"⚔️","spain":"🇪🇸"}
 CAT_COLORS = {"econ":"#1a4a6b","eu":"#2d6a4f","war":"#7b2d2d","spain":"#8B0000"}
