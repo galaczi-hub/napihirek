@@ -21,7 +21,7 @@ GMAIL_USER     = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
 GMAIL_APP_PASS = os.environ.get("GMAIL_APP_PASS", "").strip()
 
 # ←←← IDE TEDD A SAJÁT EMAIL CÍMEIDET ←←←
-TO_EMAILS      = ["galaczi.usa@gmail.com", "gorsi.kata@gmail.com"]
+TO_EMAILS      = ["galaczi.usa@gmail.com", "kata.gorcsi@gmail.com"]
 
 ICONS      = {"econ":"📈","eu":"🇪🇺","war":"⚔️","spain":"🇪🇸"}
 CAT_COLORS = {"econ":"#1a4a6b","eu":"#2d6a4f","war":"#7b2d2d","spain":"#8B0000"}
