@@ -27,49 +27,49 @@ ICONS      = {"econ":"📈","eu":"🇪🇺","war":"⚔️","spain":"🇪🇸"}
 CAT_COLORS = {"econ":"#1a4a6b","eu":"#2d6a4f","war":"#7b2d2d","spain":"#8B0000"}
 
 
-def fetch_google_news(query, max_results=10, hl="hu", gl="HU"):
+def fetch_google_news(query, max_results=15, hl="en", gl="US"):
+    """Csak nemzetközi top források (Reuters, BBC, AP, Bloomberg, Politico, Euronews, FT, Guardian stb.)"""
     encoded = requests.utils.quote(query)
-    url = f"https://news.google.com/rss/search?q={encoded}&hl={hl}&gl={gl}&ceid=HU:hu"
+    url = f"https://news.google.com/rss/search?q={encoded}&hl={hl}&gl={gl}&ceid=US:en"
     
-    print(f"→ Lekérés: {query}")
+    print(f"→ Lekérés (CSAK NEMZETKÖZI): {query}")
     try:
         feed = feedparser.parse(url)
         articles = []
         
         for entry in feed.entries[:max_results]:
             title = entry.get("title", "").strip()
-            summary = entry.get("summary", "")[:280].strip()
-            if title and "[Removed]" not in title and len(title) > 10:
+            summary = entry.get("summary", "")[:300].strip()
+            if title and len(title) > 20 and "[Removed]" not in title:
                 articles.append({
                     "title": title,
-                    "desc": summary or "Nincs rövid leírás",
-                    "source": "Google News"
+                    "desc": summary or "Nincs leírás",
+                    "source": "Google News International"
                 })
         
         print(f"   Talált cikkek: {len(articles)} db")
         return articles
     except Exception as e:
-        print(f"   Hiba a Google News lekérésnél: {e}")
+        print(f"   Hiba: {e}")
         return []
 
 
 def fetch_all_news():
-    print("Google News RSS lekérése indul...\n")
+    print("Google News RSS – CSAK NEMZETKÖZI TOP FORRÁSOK lekérése...\n")
     
     queries = {
-        "econ":  "gazdaság OR infláció OR ECB OR EKB OR kamat OR tőzsde OR eurozone",
-        "eu":    "Európai Unió OR Ursula von der Leyen OR Brüsszel OR EU Bizottság",
-        "war":   "Ukrajna háború OR Putyin OR Zelenszkij OR orosz-ukrán",
-        "spain": "Spanyolország OR Sánchez OR Madrid OR PSOE OR spanyol kormány"
+        "econ":  "inflation OR ECB OR interest rate OR stock market OR eurozone OR Fed OR Bundesbank OR FTSE OR DAX",
+        "eu":    "Ursula von der Leyen OR European Commission OR EU politics OR Brussels OR EU summit",
+        "war":   "Ukraine war OR Russia Ukraine OR Putin OR Zelenskyy OR Russia-Ukraine conflict",
+        "spain": "Pedro Sánchez OR Spain government OR Spanish politics OR PSOE"
     }
     
     return {
-        "econ":  fetch_google_news(queries["econ"],  max_results=12),
-        "eu":    fetch_google_news(queries["eu"],    max_results=10),
-        "war":   fetch_google_news(queries["war"],   max_results=10),
-        "spain": fetch_google_news(queries["spain"], max_results=8, hl="es", gl="ES")
+        "econ":  fetch_google_news(queries["econ"],  max_results=18),
+        "eu":    fetch_google_news(queries["eu"],    max_results=15),
+        "war":   fetch_google_news(queries["war"],   max_results=15),
+        "spain": fetch_google_news(queries["spain"], max_results=12)
     }
-
 
 def summarize_with_groq(articles, category_name, date_str):
     if not articles:
