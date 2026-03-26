@@ -153,50 +153,59 @@ def get_news(date_str):
 
 
 def build_html(data):
-    print("build_html függvény elindult...")
-    print(f"Beérkező adatok típusa: {type(data)}")
-    print(f"Kategóriák száma: {len(data.get('categories', []))}")
-    
-    html = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="margin:0; padding:20px; background:#f5f0e8; font-family:Georgia, serif;">
-    <h1 style="color:#1a1209;">Európai Hírlap – {data.get('date', 'Ismeretlen dátum')}</h1>
-    <p>Összes összefoglaló: {sum(len(cat.get('news', [])) for cat in data.get('categories', []))} db</p>
-    <hr>
-"""
+    cats_html = ""
+    for cat in data["categories"]:
+        cid   = cat["id"]
+        color = CAT_COLORS.get(cid, "#333333")
+        icon  = ICONS.get(cid, "●")
+        news_rows = ""
+        for item in cat.get("news", []):
+            news_rows += f"""
+            <tr>
+              <td style="width:28px;font-family:Georgia,serif;font-size:13px;color:{color};opacity:0.5;vertical-align:top;padding:12px 6px 12px 0">{item['num']}</td>
+              <td style="padding:12px 0;border-bottom:1px solid #e8e2d5;font-family:Georgia,serif;font-size:14px;line-height:1.65;color:#2a2015">
+                <strong>{item.get('title', '')}</strong><br>
+                {item.get('body', '')}
+                <span style="display:block;font-size:11px;color:#999;font-style:italic;margin-top:4px">Forrás: {item.get('source', 'Google News')}</span>
+              </td>
+            </tr>"""
+        
+        cats_html += f"""
+        <tr><td colspan="2" style="padding:0">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="background:{color};padding:16px 32px;font-family:Georgia,serif">
+              <span style="font-size:22px">{icon}</span>
+              <span style="font-size:20px;font-weight:700;color:#fff;margin-left:12px">{cat['title']}</span>
+              <span style="float:right;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:2px;padding-top:4px">5 HÍR</span>
+            </td></tr>
+            <tr><td style="padding:4px 32px 16px">
+              <table width="100%" cellpadding="0" cellspacing="0">{news_rows}</table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td colspan="2" style="height:4px;background:repeating-linear-gradient(90deg,#e8e2d5 0,#e8e2d5 6px,transparent 6px,transparent 10px)"></td></tr>"""
 
-    for cat in data.get("categories", []):
-        ctitle = cat.get("title", "Kategória")
-        news_list = cat.get("news", [])
-        
-        print(f"   Kategória feldolgozása: {ctitle} | {len(news_list)} hír")
-        
-        html += f'<h2 style="color:#2a2015; margin-top:30px;">{ctitle}</h2>\n<ul style="line-height:1.7;">\n'
-        
-        for item in news_list:
-            title = item.get("title") or item.get("Title") or "Nincs cím"
-            body  = item.get("body")  or item.get("Body")  or "Nincs szöveg"
-            source = item.get("source") or item.get("Source") or "Google News"
-            
-            html += f"""
-            <li style="margin-bottom:18px;">
-                <strong>{title}</strong><br>
-                {body}<br>
-                <small style="color:#666;">Forrás: {source}</small>
-            </li>"""
-        
-        html += "</ul>\n<hr>\n"
-    
-    html += """
-    <p style="color:#666; font-size:12px; margin-top:40px;">
-        Európai Hírlap • Generálva: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#2a2015">
+<table width="680" cellpadding="0" cellspacing="0" align="center" style="background:#f5f0e8;margin:20px auto">
+  <tr><td colspan="2" style="background:#1a1209;padding:28px 40px 20px;text-align:center;border-bottom:4px solid #b8922a">
+    <div style="font-size:38px;font-weight:900;color:#f5f0e8">Európai<span style="color:#b8922a"> Hírlap</span></div>
+    <div style="color:#8a7d68;font-size:10px;letter-spacing:4px;text-transform:uppercase;margin-top:8px">Minden reggel · A világ legfontosabb hírei</div>
+    <div style="color:#c5b99a;font-size:13px;font-style:italic;border-top:1px solid #3d3428;padding-top:10px;margin-top:10px">{data['date']} &nbsp;·&nbsp; Reggeli kiadás &nbsp;·&nbsp; 09:00 CET</div>
+  </td></tr>
+  <tr><td colspan="2" style="background:#b8922a;padding:8px 40px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#1a1209;text-align:center;font-weight:700">
+    4 KATEGÓRIA · 20 FRISS HÍR
+  </td></tr>
+  {cats_html}
+  <tr><td colspan="2" style="background:#1a1209;padding:18px 40px;text-align:center">
+    <p style="color:#5a5040;font-size:10px;line-height:1.9;margin:0">
+      Európai Hírlap • Top nemzetközi források + Groq AI<br>
+      Minden nap 09:00 CET • galaczi.usa@gmail.com
     </p>
-</body>
-</html>"""
-    
-    print(f"build_html kész – generált HTML hossza: {len(html)} karakter")
-    return html
+  </td></tr>
+</table>
+</body></html>"""
 
 def send_email(html_content, date_str):
     msg = MIMEMultipart("alternative")
