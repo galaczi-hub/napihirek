@@ -189,12 +189,14 @@ def run():
     total_final = sum(len(cat.get("news", [])) for cat in news_data.get("categories", []))
     print(f"\nVégső hír darabszám: {total_final} db\n")
 
-    if total_final >= 4:        # legalább 4 összefoglaló kell az emailhez
+    if total_final >= 5:        # legalább 5 összefoglaló kell az email küldéshez
         html_email = build_html(news_data)
         send_email(html_email, date_str)
+        print("Email elküldve.")
     else:
-        print("⚠️  Nincs elég hír az email küldéshez (minimum 4 összefoglaló szükséges).")
-
+        print("⚠️  TÚL KEVÉS HÍR – nem küldünk emailt (csak akkor, ha van legalább 5 összefoglaló).")
+        # Opcionális: küldhetsz egy egyszerű értesítést magadnak
+        # send_telegram(f"Európai Hírlap: csak {total_final} hír ma – nem küldtünk levelet.")
 
 if __name__ == "__main__":
     run()
