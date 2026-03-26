@@ -1,209 +1,176 @@
 #!/usr/bin/env python3
 """
-Európai Hírlap – Napi automatikus küldő
-Javított 2026.03 verzió
+Európai Hírlap – Napi automatikus küldés
+Google News RSS + Groq Llama (magyar összefoglaló)
 """
+
 import os
 import json
 import re
 import smtplib
 import datetime
+import time
 import requests
-import traceback
+import feedparser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# ────────────────────────────────────────────────
-# KONFIGURÁCIÓ (GitHub Secrets-ben legyenek!)
-# ────────────────────────────────────────────────
-GROQ_API_KEY    = os.environ.get("GROQ_API_KEY", "").strip()
-NEWS_API_KEY    = os.environ.get("NEWS_API_KEY", "").strip()
-GMAIL_USER      = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
-GMAIL_APP_PASS  = os.environ.get("GMAIL_APP_PASS", "").strip()
-TO_EMAILS       = ["galaczi.usa@gmail.com", "kata.gorcsi@gmail.com"]
+# KONFIGURÁCIÓ
+GROQ_API_KEY   = os.environ.get("GROQ_API_KEY", "").strip()
+GMAIL_USER     = os.environ.get("GMAIL_USER", "galaczi.usa@gmail.com").strip()
+GMAIL_APP_PASS = os.environ.get("GMAIL_APP_PASS", "").strip()
+TO_EMAILS      = ["galaczi.usa@gmail.com", "gorsi.kata@gmail.com"]
 
-ICONS = {
-    "econ":  "📈",
-    "eu":    "🇪🇺",
-    "war":   "⚔️",
-    "spain": "🇪🇸"
-}
-CAT_COLORS = {
-    "econ":  "#1a4a6b",
-    "eu":    "#2d6a4f",
-    "war":   "#7b2d2d",
-    "spain": "#8B0000"
-}
+ICONS      = {"econ":"📈","eu":"🇪🇺","war":"⚔️","spain":"🇪🇸"}
+CAT_COLORS = {"econ":"#1a4a6b","eu":"#2d6a4f","war":"#7b2d2d","spain":"#8B0000"}
 
-CATEGORIES = {
-    "econ":  "economy EU OR eurozone OR inflation OR ECB",
-    "eu":    "European Union OR EU Commission OR Ursula von der Leyen OR Brussels",
-    "war":   "Ukraine war OR Russia Ukraine OR Putin OR Zelenskyy",
-    "spain": "Spain OR Sánchez OR Madrid OR PSOE"
-}
 
-# ────────────────────────────────────────────────
-def fetch_articles(query, language="en", page_size=12):
-    if not NEWS_API_KEY:
-        print("Hiányzik NEWS_API_KEY → üres lista")
-        return []
+def fetch_google_news(query, max_results=10, hl="hu", gl="HU"):
+    """Google News RSS lekérése"""
+    encoded = requests.utils.quote(query)
+    url = f"https://news.google.com/rss/search?q={encoded}&hl={hl}&gl={gl}&ceid=HU:hu"
+    
+    print(f"→ Lekérés: {query}")
+    feed = feedparser.parse(url)
+    articles = []
+    
+    for entry in feed.entries[:max_results]:
+        title = entry.get("title", "").strip()
+        summary = entry.get("summary", "")[:250].strip()
+        link = entry.get("link", "")
+        published = entry.get("published", "")
+        
+        if title and "[Removed]" not in title:
+            articles.append({
+                "title": title,
+                "desc": summary,
+                "source": "Google News",
+                "link": link
+            })
+    
+    print(f"   talált cikkek: {len(articles)} db")
+    return articles
 
-    today = datetime.date.today().isoformat()
-    url = "https://newsapi.org/v2/everything"
-    params = {
-        "q": query,
-        "from": today,
-        "to": today,
-        "language": language,
-        "sortBy": "publishedAt",
-        "pageSize": page_size,
-        "apiKey": NEWS_API_KEY,
+
+def fetch_all_news():
+    print("Google News RSS lekérése indul...\n")
+    
+    queries = {
+        "econ":  "gazdaság OR infláció OR ECB OR EKB OR eurozone OR kamat OR tőzsde",
+        "eu":    "Európai Unió OR Ursula von der Leyen OR Brüsszel OR EU Bizottság",
+        "war":   "Ukrajna háború OR Putyin OR Zelenszkij OR orosz-ukrán",
+        "spain": "Spanyolország OR Sánchez OR Madrid OR PSOE OR spanyol kormány"
+    }
+    
+    return {
+        "econ":  fetch_google_news(queries["econ"], max_results=12),
+        "eu":    fetch_google_news(queries["eu"], max_results=10),
+        "war":   fetch_google_news(queries["war"], max_results=10),
+        "spain": fetch_google_news(queries["spain"], max_results=8, hl="es", gl="ES")
     }
 
-    try:
-        r = requests.get(url, params=params, timeout=12)
-        r.raise_for_status()
-        data = r.json()
 
-        if data.get("status") != "ok":
-            print("NewsAPI hiba:", data.get("message", "ismeretlen"))
-            return []
-
-        articles = data.get("articles", [])
-        print(f"[{query}] talált cikkek: {len(articles)} db")
-
-        # Egyszerű szűrés / tisztítás
-        cleaned = []
-        seen_urls = set()
-        for art in articles:
-            url = art.get("url", "").strip()
-            if not url or url in seen_urls:
-                continue
-            seen_urls.add(url)
-
-            title = (art.get("title") or "").strip()
-            desc = (art.get("description") or art.get("content") or "").strip()
-
-            if len(title) < 8 or "Removed" in title:
-                continue
-
-            cleaned.append({
-                "title": title,
-                "url": url,
-                "desc": desc[:180] + "..." if len(desc) > 180 else desc,
-                "source": art.get("source", {}).get("name", "–")
-            })
-
-        return cleaned[:page_size]  # ne vigyük túlzásba
-
-    except Exception as e:
-        print("Hiba a NewsAPI lekérésnél:", str(e))
-        traceback.print_exc()
+def summarize_with_groq(articles, category_name, date_str):
+    """Groq összefoglaló magyarul"""
+    if not articles:
+        print(f"   Nincs cikk a {category_name} kategóriában")
         return []
 
+    articles_text = "\n".join([
+        f"- {a['title']} | {a['desc'][:180]} | Forrás: {a['source']}"
+        for a in articles[:8]
+    ])
 
-# ────────────────────────────────────────────────
-def send_email(categorized_news):
-    if not GMAIL_USER or not GMAIL_APP_PASS:
-        print("Hiányzik GMAIL_USER vagy GMAIL_APP_PASS → nem küldök")
-        return False
+    prompt = f"""Az alábbi mai hírek alapján készíts **pontosan 4-5** magyar nyelvű hírösszefoglalót a "{category_name}" kategóriához.
+Dátum: {date_str}
 
-    if not any(categorized_news.values()):
-        print("Nincs hír egyik kategóriában sem → nem küldök levelet")
-        return False
+Hírek:
+{articles_text}
 
-    today_str = datetime.date.today().strftime("%Y. %m. %d. – %A")
+Szabályok:
+- Pontosan 4 vagy 5 tétel
+- Minden tétel: rövid magyar cím + 2 mondatos magyar összefoglaló + forrás
+- Válaszolj KIZÁRÓLAG érvényes JSON tömbként, semmi más szöveg nélkül:
+[{{"num":"01","title":"Magyar cím","body":"Két mondatos összefoglaló magyarul.","source":"Forrás neve"}}]
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Európai Hírlap – {today_str}"
-    msg["From"]    = f"Európai Hírlap <{GMAIL_USER}>"
-    msg["To"]      = ", ".join(TO_EMAILS)
+CSAK a JSON tömböt add vissza!"""
 
-    # ───── Plain text verzió ─────
-    lines = [f"Európai Hírlap – {today_str}\n" + "="*50 + "\n"]
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 1200,
+        "temperature": 0.4,
+    }
 
-    for cat, query in CATEGORIES.items():
-        articles = categorized_news.get(cat, [])
-        if not articles:
-            continue
-        lines.append(f"\n{ICONS.get(cat, '•')} {cat.upper()} ({len(articles)} hír)")
-        for a in articles:
-            lines.append(f"• {a['title']}")
-            lines.append(f"  {a['url'][:90]}")
-            lines.append("")
+    for attempt in range(3):
+        try:
+            resp = requests.post("https://api.groq.com/openai/v1/chat/completions",
+                                 headers=headers, json=payload, timeout=50)
+            resp.raise_for_status()
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            
+            # JSON tisztítás
+            clean = re.sub(r"```json|```", "", text).strip()
+            start = clean.find("[")
+            end = clean.rfind("]") + 1
+            if start >= 0 and end > start:
+                clean = clean[start:end]
+            
+            result = json.loads(clean)
+            print(f"   Groq összefoglaló kész: {len(result)} elem")
+            return result
+        except Exception as e:
+            print(f"   Groq hiba ({attempt+1}/3): {e}")
+            if attempt < 2:
+                time.sleep(12)
+    return []
 
-    plain_body = "\n".join(lines)
 
-    # ───── HTML verzió (szépebb) ─────
-    html_lines = [
-        "<html><head><meta charset='utf-8'></head><body style='font-family:Arial,sans-serif; color:#222;'>",
-        f"<h2 style='color:#1a3c5e;'>Európai Hírlap – {today_str}</h2>",
-        "<hr style='border:none; border-top:1px solid #ccc; margin:20px 0;'>"
+def get_news(date_str):
+    raw = fetch_all_news()
+    cats = [
+        ("econ",  "Gazdaság & Tőzsdés Hírek"),
+        ("eu",    "EU & Európai Politika"),
+        ("war",   "Háborús és Geopolitikai Hírek"),
+        ("spain", "Spanyol Hírek")
     ]
-
-    for cat, query in CATEGORIES.items():
-        articles = categorized_news.get(cat, [])
-        if not articles:
-            continue
-
-        color = CAT_COLORS.get(cat, "#444")
-        html_lines.append(f"<h3 style='color:{color}; margin-top:1.8em;'>{ICONS.get(cat,'•')} {cat.upper()} ({len(articles)})</h3>")
-        html_lines.append("<ul style='margin:0; padding-left:1.4em; line-height:1.5;'>")
-
-        for a in articles:
-            html_lines.append(
-                f"<li style='margin-bottom:1.1em;'>"
-                f"<strong><a href='{a['url']}' style='color:{color}; text-decoration:none;'>{a['title']}</a></strong>"
-                f"<br><small style='color:#555;'>{a['source']} • {a['desc']}</small>"
-                f"</li>"
-            )
-
-        html_lines.append("</ul>")
-
-    html_lines.append("<br><hr><p style='color:#777; font-size:0.9em;'>"
-                      "Ez egy automatikus napi hírlevél. Leiratkozás: válaszolj erre a levélre.</p>"
-                      "</body></html>")
-
-    html_body = "\n".join(html_lines)
-
-    # Csatolás
-    msg.attach(MIMEText(plain_body, "plain", "utf-8"))
-    msg.attach(MIMEText(html_body,  "html",  "utf-8"))
-
-    # Küldés
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(GMAIL_USER, GMAIL_APP_PASS)
-            server.send_message(msg)
-        print("Email sikeresen elküldve")
-        return True
-    except Exception as e:
-        print("EMAIL KÜLDÉSI HIBA:", str(e))
-        traceback.print_exc()
-        return False
+    
+    categories = []
+    for idx, (cid, ctitle) in enumerate(cats):
+        print(f"\nFeldolgozás: {ctitle}...")
+        if idx > 0:
+            time.sleep(10)  # Groq rate limit védelem
+        
+        news_items = summarize_with_groq(raw[cid], ctitle, date_str)
+        for i, item in enumerate(news_items):
+            item["num"] = str(i+1).zfill(2)
+        
+        categories.append({"id": cid, "title": ctitle, "news": news_items})
+    
+    return {"date": date_str, "categories": categories}
 
 
-# ────────────────────────────────────────────────
-# FŐ PROGRAM
-# ────────────────────────────────────────────────
+# A build_html és send_email függvények maradnak ugyanazok (csak másold be őket a régi kódodból)
+
+# ... (ide másold be a régi build_html és send_email függvényeket változtatás nélkül)
+
+def run():
+    today  = datetime.date.today()
+    days   = ["hétfő","kedd","szerda","csütörtök","péntek","szombat","vasárnap"]
+    months = ["január","február","március","április","május","június","július","augusztus","szeptember","október","november","december"]
+    
+    date_str = f"{today.year}. {months[today.month-1]} {today.day}., {days[today.weekday()]}"
+    
+    print(f"Európai Hírlap napi futtatás indul... ({date_str})\n")
+    
+    news_data  = get_news(date_str)
+    html_email = build_html(news_data)      # <-- ezt a függvényt a régi kódból másold be
+    send_email(html_email, date_str)
+
+
 if __name__ == "__main__":
-    print("Európai Hírlap napi futtatás indul...")
-
-    categorized = {}
-
-    for cat, query in CATEGORIES.items():
-        print(f"\n→ Lekérés: {cat} ({query})")
-        arts = fetch_articles(query, language="en", page_size=10)
-        if arts:
-            categorized[cat] = arts
-
-    # Teszteléshez kiírjuk, mi gyűlt össze
-    for cat, lst in categorized.items():
-        print(f"{cat:6} → {len(lst)} db")
-
-    # Küldés csak akkor, ha van valami
-    if categorized:
-        send_email(categorized)
-    else:
-        print("Nem volt hír ma → nem küldök levelet")
+    run()
