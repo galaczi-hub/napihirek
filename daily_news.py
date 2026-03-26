@@ -87,7 +87,7 @@ Hírek:
 {articles_text}
 
 Szabályok:
-- Pontosan 5 tétel
+- Pontosan 10 tétel
 - Minden tétel: rövid, ütős magyar cím + maximum 2 mondatos összefoglaló
 - Csak a legfontosabb, legjellemzőbb híreket válaszd ki
 - Válaszolj KIZÁRÓLAG érvényes JSON tömbként, semmi más szöveg nélkül!
