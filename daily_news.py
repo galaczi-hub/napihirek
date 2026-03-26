@@ -80,20 +80,20 @@ def summarize_with_groq(articles, category_name, date_str):
         f"- {a['title']} | {a['desc'][:200]}" for a in articles[:7]
     ])
 
-    prompt = f"""Készíts pontosan 4 magyar nyelvű hírösszefoglalót a "{category_name}" kategóriához a mai hírek alapján.
+        prompt = f"""Az alábbi mai nemzetközi hírek alapján készíts **pontosan 5** magyar nyelvű, jó minőségű hírösszefoglalót a "{category_name}" kategóriához.
 Dátum: {date_str}
 
 Hírek:
 {articles_text}
 
 Szabályok:
-- Pontosan 4 tétel
-- Minden tétel: rövid magyar cím + 2 mondatos összefoglaló + forrás
-- Válasz KIZÁRÓLAG érvényes JSON tömbként, semmi más szöveg nélkül!
+- Pontosan 5 tétel
+- Minden tétel: rövid, ütős magyar cím + maximum 2 mondatos összefoglaló
+- Csak a legfontosabb, legjellemzőbb híreket válaszd ki
+- Válaszolj KIZÁRÓLAG érvényes JSON tömbként, semmi más szöveg nélkül!
 
-Példa:
-[{{"num":"01","title":"Cím","body":"Első mondat. Második mondat.","source":"Google News"}}]"""
-
+Példa formátum:
+[{{"num":"01","title":"Cím","body":"Első mondat. Második mondat.","source":"Reuters"}}]"""
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     payload = {
         "model": "llama-3.3-70b-versatile",
