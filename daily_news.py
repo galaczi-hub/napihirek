@@ -153,11 +153,50 @@ def get_news(date_str):
 
 
 def build_html(data):
-    # ←←← IDE TEDD BE A RÉGI build_html FÜGGVÉNYEDET TELJESEN ←←←
-    # (ugyanaz, amit korábban használtál)
-    # Ha nincs meg, szólj és megadom újra
-    pass   # ideiglenesen, hogy ne legyen syntax error
+    print("build_html függvény elindult...")
+    print(f"Beérkező adatok típusa: {type(data)}")
+    print(f"Kategóriák száma: {len(data.get('categories', []))}")
+    
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0; padding:20px; background:#f5f0e8; font-family:Georgia, serif;">
+    <h1 style="color:#1a1209;">Európai Hírlap – {data.get('date', 'Ismeretlen dátum')}</h1>
+    <p>Összes összefoglaló: {sum(len(cat.get('news', [])) for cat in data.get('categories', []))} db</p>
+    <hr>
+"""
 
+    for cat in data.get("categories", []):
+        ctitle = cat.get("title", "Kategória")
+        news_list = cat.get("news", [])
+        
+        print(f"   Kategória feldolgozása: {ctitle} | {len(news_list)} hír")
+        
+        html += f'<h2 style="color:#2a2015; margin-top:30px;">{ctitle}</h2>\n<ul style="line-height:1.7;">\n'
+        
+        for item in news_list:
+            title = item.get("title") or item.get("Title") or "Nincs cím"
+            body  = item.get("body")  or item.get("Body")  or "Nincs szöveg"
+            source = item.get("source") or item.get("Source") or "Google News"
+            
+            html += f"""
+            <li style="margin-bottom:18px;">
+                <strong>{title}</strong><br>
+                {body}<br>
+                <small style="color:#666;">Forrás: {source}</small>
+            </li>"""
+        
+        html += "</ul>\n<hr>\n"
+    
+    html += """
+    <p style="color:#666; font-size:12px; margin-top:40px;">
+        Európai Hírlap • Generálva: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}
+    </p>
+</body>
+</html>"""
+    
+    print(f"build_html kész – generált HTML hossza: {len(html)} karakter")
+    return html
 
 def send_email(html_content, date_str):
     msg = MIMEMultipart("alternative")
