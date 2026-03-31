@@ -201,7 +201,7 @@ def build_html(data):
   </td></tr>
   {cats_html}
   <tr><td colspan="2" style="background:#1a1209;padding:18px 40px;text-align:center">
-    <p style="color:#5a5040;font-size:10px;line-height:1.9;margin:0">
+    <p style="color:#5a5040;font-size:20px;line-height:1.9;margin:0">
       Európai Hírlap • Top nemzetközi források + Groq AI<br>
       Minden nap 09:00 CET • galaczi.usa@gmail.com
     </p>
