@@ -80,7 +80,7 @@ def summarize_with_groq(articles, category_name, date_str):
         f"- {a['title']} | {a['desc'][:200]}" for a in articles[:8]
     ])
 
-    prompt = f"""Az alábbi mai nemzetközi hírek alapján készíts pontosan 5 magyar nyelvű, jó minőségű hírösszefoglalót a "{category_name}" kategóriához.
+    prompt = f"""Az alábbi mai nemzetközi hírek alapján készíts pontosan 10 magyar nyelvű, jó minőségű hírösszefoglalót a "{category_name}" kategóriához.
 Dátum: {date_str}
 
 Hírek:
