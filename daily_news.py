@@ -178,7 +178,7 @@ def build_html(data):
             <tr><td style="background:{color};padding:16px 32px;font-family:Georgia,serif">
               <span style="font-size:22px">{icon}</span>
               <span style="font-size:20px;font-weight:700;color:#fff;margin-left:12px">{cat['title']}</span>
-              <span style="float:right;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:2px;padding-top:4px">5 HÍR</span>
+              <span style="float:right;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:2px;padding-top:4px">10 HÍR</span>
             </td></tr>
             <tr><td style="padding:4px 32px 16px">
               <table width="100%" cellpadding="0" cellspacing="0">{news_rows}</table>
