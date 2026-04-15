@@ -90,6 +90,7 @@ Szabályok:
 - Pontosan 10 tétel
 - Minden tétel: rövid, ütős magyar cím + maximum 2 mondatos összefoglaló
 - Csak a legfontosabb, legjellemzőbb híreket válaszd ki
+- Ne legyen hírismétlés,amennyiben elfogynak az új hírek,lehetnek benne másod sorból fontosnak számító hírek is,de ne ismételjünk
 - Válaszolj KIZÁRÓLAG érvényes JSON tömbként, semmi más szöveg nélkül!
 
 Példa formátum:
