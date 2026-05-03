@@ -93,16 +93,35 @@ Célközönség: webfejlesztők, rendszergazdák, WordPress / CMS üzemeltetők.
 
 Szabályok:
 - Pontosan 10 tétel
-- Minden tétel felépítése:
-    • Rövid, tömör magyar cím (max 10 szó)
-    • 2-3 mondatos összefoglaló: mi történt, melyik szoftver/verzió érintett (ha ismert), és mit kell tenni (frissítés, plugin letiltása, tűzfalszabály, jelszócsere stb.)
 - Prioritás: aktív támadások > kritikus CVE / patch > általános biztonsági tanácsok
-- Ha van konkrét CVE-szám, verziószám vagy IOC (IP, domain), mindenképpen szerepeljen
+- Ha van konkrét CVE-szám, verziószám vagy IOC (IP, domain), mindenképpen szerepeljen a body mezőben
 - Ne legyen hírismétlés; ha elfogynak a kritikus hírek, jöhetnek fontos általános biztonsági fejlemények
+- Minden tétel KÖTELEZŐ mezői:
+    "num"      – sorszám ("01"–"10")
+    "title"    – rövid, tömör magyar cím, max 10 szó
+    "body"     – 2-3 mondatos összefoglaló: mi történt, melyik szoftver/verzió érintett
+    "action"   – 1-2 mondatos konkrét teendő magyarul (mit kell frissíteni, letiltani, ellenőrizni)
+    "severity" – PONTOSAN egy ezek közül: "critical" | "medium" | "info"
+                   critical = aktív támadás vagy azonnal kihasználható kritikus CVE
+                   medium   = patch elérhető, de nincs aktív tömeges kihasználás
+                   info     = általános figyelmeztetés, trendek, tanácsok
+    "tags"     – JSON tömb, 1-3 elem, CSAK ezekből választhatsz:
+                   "wordpress", "plugin", "theme", "server", "apache", "nginx",
+                   "php", "mysql", "linux", "windows", "network", "email",
+                   "browser", "cdn", "hosting", "general"
+    "source"   – forrás neve (pl. "Bleeping Computer", "CISA", "CVE Database")
 - Válaszolj KIZÁRÓLAG érvényes JSON tömbként, semmi más szöveg nélkül!
 
 Példa formátum:
-[{{"num":"01","title":"Kritikus WordPress plugin sebezhetőség","body":"A Contact Form 7 plugin 5.9.5-ös verziója előtt aktív remote code execution (CVE-2025-XXXXX) sebezhetőséget találtak. Azonnal frissíts 5.9.6-ra, vagy deaktiváld a plugint a javítás telepítéséig.","source":"Bleeping Computer"}}]"""
+[{{
+  "num":"01",
+  "title":"Kritikus WordPress plugin sebezhetőség",
+  "body":"A Contact Form 7 plugin 5.9.5-ös verziója előtt aktív RCE sebezhetőséget (CVE-2025-1234) találtak, amelyet már aktívan kihasználnak automatizált szkriptekkel.",
+  "action":"Frissítsd a Contact Form 7 plugint azonnal 5.9.6-ra. Ha nem tudod, ideiglenesen deaktivítsd a Bővítmények menüben.",
+  "severity":"critical",
+  "tags":["wordpress","plugin"],
+  "source":"Bleeping Computer"
+}}]"""
 
 DEFAULT_PROMPT_TEMPLATE = """Az alábbi mai nemzetközi hírek alapján készíts pontosan 10 magyar nyelvű, jó minőségű hírösszefoglalót a "{category_name}" kategóriához.
 Dátum: {date_str}
@@ -127,7 +146,7 @@ def summarize_with_groq(articles, category_id, category_name, date_str):
         return []
 
     articles_text = "\n".join([
-        f"- {a['title']} | {a['desc'][:200]}" for a in articles[:10]
+        f"- {a['title']} | {a['desc'][:200]}" for a in articles[:15]
     ])
 
     if category_id == "tech":
@@ -146,8 +165,8 @@ def summarize_with_groq(articles, category_id, category_name, date_str):
     payload = {
         "model": "llama-3.3-70b-versatile",
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 1400,
-        "temperature": 0.3,  # tech kategóriánál alacsonyabb hőmérséklet = pontosabb adatok
+        "max_tokens": 2200 if category_id == "tech" else 1400,
+        "temperature": 0.3,
     }
 
     for attempt in range(3):
@@ -202,39 +221,117 @@ def get_news(date_str):
     return {"date": date_str, "categories": categories}
 
 
+# ── Tech badge segédfüggvények ─────────────────────────────────────────────────
+
+SEVERITY_STYLE = {
+    "critical": ("⚠ KRITIKUS", "#7b1a1a", "#fff",   "#c0392b"),
+    "medium":   ("▲ KÖZEPES",  "#5a3a00", "#fff",   "#b8860b"),
+    "info":     ("● INFO",     "#1a3a1a", "#fff",   "#2d6a4f"),
+}
+
+TAG_STYLE = {
+    "wordpress": ("#fcebeb", "#791f1f", "WordPress"),
+    "plugin":    ("#fcebeb", "#791f1f", "plugin"),
+    "theme":     ("#faeeda", "#633806", "téma"),
+    "server":    ("#e6f1fb", "#0c447c", "szerver"),
+    "apache":    ("#e6f1fb", "#0c447c", "Apache"),
+    "nginx":     ("#e6f1fb", "#0c447c", "Nginx"),
+    "php":       ("#e6f1fb", "#0c447c", "PHP"),
+    "mysql":     ("#e6f1fb", "#0c447c", "MySQL"),
+    "linux":     ("#eaf3de", "#27500a", "Linux"),
+    "windows":   ("#eaf3de", "#27500a", "Windows"),
+    "network":   ("#eaf3de", "#27500a", "hálózat"),
+    "email":     ("#faeeda", "#633806", "email"),
+    "browser":   ("#faeeda", "#633806", "böngésző"),
+    "cdn":       ("#eaf3de", "#27500a", "CDN"),
+    "hosting":   ("#e6f1fb", "#0c447c", "hosting"),
+    "general":   ("#f1efe8", "#444441", "általános"),
+}
+
+def _severity_badge(severity):
+    label, bg_text, fg, bg = SEVERITY_STYLE.get(severity, SEVERITY_STYLE["info"])
+    return (
+        f'<span style="display:inline-block;background:{bg};color:{fg};'
+        f'font-size:10px;font-weight:700;letter-spacing:0.5px;padding:2px 7px;'
+        f'border-radius:3px;margin-right:6px;vertical-align:middle">{label}</span>'
+    )
+
+def _tag_badge(tag):
+    bg, color, label = TAG_STYLE.get(tag, ("#f1efe8", "#444441", tag))
+    return (
+        f'<span style="display:inline-block;background:{bg};color:{color};'
+        f'font-size:10px;padding:2px 6px;border-radius:3px;'
+        f'margin-right:4px;vertical-align:middle">{label}</span>'
+    )
+
+def _tech_news_row(item, color):
+    severity   = item.get("severity", "info")
+    tags       = item.get("tags", [])
+    action     = item.get("action", "")
+    body       = item.get("body", "")
+    title      = item.get("title", "")
+    source     = item.get("source", "Google News")
+    num        = item.get("num", "")
+
+    sev_badge  = _severity_badge(severity)
+    tag_badges = "".join(_tag_badge(t) for t in tags)
+
+    # Teendő sáv csak ha van tartalom
+    action_block = ""
+    if action:
+        action_block = (
+            f'<div style="background:#f0f4f0;border-left:3px solid #2d6a4f;'
+            f'padding:6px 10px;margin-top:8px;font-size:12px;color:#1a3a1a;'
+            f'font-family:Georgia,serif;line-height:1.5;">'
+            f'<strong>Teendő:</strong> {action}</div>'
+        )
+
+    return f"""
+    <tr>
+      <td style="width:28px;font-family:Georgia,serif;font-size:13px;color:{color};opacity:0.5;vertical-align:top;padding:14px 6px 14px 0">{num}</td>
+      <td style="padding:14px 0;border-bottom:1px solid #e8e2d5;">
+        <div style="margin-bottom:6px">{sev_badge}{tag_badges}</div>
+        <strong style="font-family:Georgia,serif;font-size:14px;color:#1a1209">{title}</strong><br>
+        <span style="font-family:Georgia,serif;font-size:13px;line-height:1.65;color:#2a2015">{body}</span>
+        {action_block}
+        <span style="display:block;font-size:11px;color:#999;font-style:italic;margin-top:6px">Forrás: {source}</span>
+      </td>
+    </tr>"""
+
+
 def build_html(data):
     cats_html = ""
     for cat in data["categories"]:
         cid   = cat["id"]
         color = CAT_COLORS.get(cid, "#333333")
         icon  = ICONS.get(cid, "●")
-
-        # Tech kategóriánál a hírsorok kicsit más stílusú (monospace font a CVE-khez, warning badge)
         is_tech = (cid == "tech")
 
         news_rows = ""
         for item in cat.get("news", []):
-            body_style = (
-                "font-family:monospace,monospace;font-size:13px;line-height:1.7;color:#1a2e1a"
-                if is_tech else
-                "font-family:Georgia,serif;font-size:14px;line-height:1.65;color:#2a2015"
-            )
-            badge = (
-                '<span style="display:inline-block;background:#c0392b;color:#fff;'
-                'font-size:9px;letter-spacing:1px;padding:1px 5px;border-radius:2px;'
-                'margin-right:6px;vertical-align:middle">⚠ TECH</span>'
-                if is_tech else ""
-            )
-            news_rows += f"""
-            <tr>
-              <td style="width:28px;font-family:Georgia,serif;font-size:13px;color:{color};opacity:0.5;vertical-align:top;padding:12px 6px 12px 0">{item['num']}</td>
-              <td style="padding:12px 0;border-bottom:1px solid #e8e2d5;{body_style}">
-                <strong>{badge}{item.get('title', '')}</strong><br>
-                {item.get('body', '')}
-                <span style="display:block;font-size:11px;color:#999;font-style:italic;margin-top:4px">Forrás: {item.get('source', 'Google News')}</span>
-              </td>
-            </tr>"""
-        
+            if is_tech:
+                news_rows += _tech_news_row(item, color)
+            else:
+                news_rows += f"""
+                <tr>
+                  <td style="width:28px;font-family:Georgia,serif;font-size:13px;color:{color};opacity:0.5;vertical-align:top;padding:12px 6px 12px 0">{item['num']}</td>
+                  <td style="padding:12px 0;border-bottom:1px solid #e8e2d5;font-family:Georgia,serif;font-size:14px;line-height:1.65;color:#2a2015">
+                    <strong>{item.get('title', '')}</strong><br>
+                    {item.get('body', '')}
+                    <span style="display:block;font-size:11px;color:#999;font-style:italic;margin-top:4px">Forrás: {item.get('source', 'Google News')}</span>
+                  </td>
+                </tr>"""
+
+        # Tech kategóriánál badge-magyarázó a fejléc alá
+        legend_block = ""
+        if is_tech:
+            legend_block = """
+            <tr><td style="padding:8px 32px 4px;background:#f0f4f0;font-size:10px;color:#5a7a5a;font-family:Georgia,serif;letter-spacing:0.5px;">
+              <span style="background:#c0392b;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;margin-right:6px">⚠ KRITIKUS</span> azonnali beavatkozás &nbsp;·&nbsp;
+              <span style="background:#b8860b;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;margin-right:6px">▲ KÖZEPES</span> frissítsd hamarosan &nbsp;·&nbsp;
+              <span style="background:#2d6a4f;color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;margin-right:6px">● INFO</span> érdemes tudni
+            </td></tr>"""
+
         cats_html += f"""
         <tr><td colspan="2" style="padding:0">
           <table width="100%" cellpadding="0" cellspacing="0">
@@ -243,6 +340,7 @@ def build_html(data):
               <span style="font-size:20px;font-weight:700;color:#fff;margin-left:12px">{cat['title']}</span>
               <span style="float:right;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:2px;padding-top:4px">10 HÍR</span>
             </td></tr>
+            {legend_block}
             <tr><td style="padding:4px 32px 16px">
               <table width="100%" cellpadding="0" cellspacing="0">{news_rows}</table>
             </td></tr>
