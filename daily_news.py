@@ -92,7 +92,7 @@ Hírek:
 Célközönség: webfejlesztők, rendszergazdák, WordPress / CMS üzemeltetők.
 
 Szabályok:
-- Pontosan 10 tétel
+- Pontosan 5 tétel
 - Prioritás: aktív támadások > kritikus CVE / patch > általános biztonsági tanácsok
 - Ha van konkrét CVE-szám, verziószám vagy IOC (IP, domain), mindenképpen szerepeljen a body mezőben
 - Ne legyen hírismétlés; ha elfogynak a kritikus hírek, jöhetnek fontos általános biztonsági fejlemények
@@ -130,7 +130,7 @@ Hírek:
 {articles_text}
 
 Szabályok:
-- Pontosan 10 tétel
+- Pontosan 5 tétel
 - Minden tétel: rövid, ütős magyar cím + maximum 2 mondatos összefoglaló
 - Csak a legfontosabb, legjellemzőbb híreket válaszd ki
 - Ne legyen hírismétlés,amennyiben elfogynak az új hírek,lehetnek benne másod sorból fontosnak számító hírek is,de ne ismételjünk
