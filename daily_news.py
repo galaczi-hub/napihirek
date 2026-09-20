@@ -116,7 +116,8 @@ CSAK JSON tomb, semmi mas."""
             )
             resp.raise_for_status()
             text = resp.json()["choices"][0]["message"]["content"]
-            print(f"Groq valasz ({len(text)} kar): {text[:200]}")
+            print(f"Groq valasz ({len(text)} kar):")
+            print(text[:500])
             clean = re.sub(r"```json|```", "", text).strip()
             start = clean.find("[")
             end   = clean.rfind("]") + 1
