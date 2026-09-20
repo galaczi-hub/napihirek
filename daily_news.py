@@ -59,9 +59,13 @@ def fetch_all_news():
     print(f"  eu: {len(eu)} cikk")
     war = fetch_articles("Ukraine war conflict Middle East", page_size=8)
     print(f"  war: {len(war)} cikk")
-    spain = fetch_articles("Spain España politics economy", language="es", page_size=8)
+    spain = fetch_articles("Spain politics economy Sanchez", language="en", page_size=8)
+    if len(spain) == 0:
+        spain = fetch_articles("Spain Europe economy", page_size=8)
     print(f"  spain: {len(spain)} cikk")
-    tech = fetch_articles("cybersecurity ransomware data breach vulnerability hack", page_size=8)
+    tech = fetch_articles("technology AI artificial intelligence cyber hack", page_size=8)
+    if len(tech) == 0:
+        tech = fetch_articles("technology innovation digital", page_size=8)
     print(f"  tech: {len(tech)} cikk")
     return {
         "econ":  econ,
