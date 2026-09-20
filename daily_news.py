@@ -63,9 +63,9 @@ def fetch_all_news():
     if len(spain) == 0:
         spain = fetch_articles("Spain Europe economy", page_size=8)
     print(f"  spain: {len(spain)} cikk")
-    tech = fetch_articles("technology AI artificial intelligence cyber hack", page_size=8)
+    tech = fetch_articles("technology", page_size=8)
     if len(tech) == 0:
-        tech = fetch_articles("technology innovation digital", page_size=8)
+        tech = fetch_articles("science innovation", page_size=8)
     print(f"  tech: {len(tech)} cikk")
     return {
         "econ":  econ,
