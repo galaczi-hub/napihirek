@@ -52,11 +52,19 @@ def fetch_articles(query, language="en", page_size=8):
 
 def fetch_all_news():
     print("NewsAPI hirek letoltese...")
+    econ = fetch_articles("european stock market economy finance", page_size=8)
+    print(f"  econ: {len(econ)} cikk")
+    eu = fetch_articles("European Union EU politics Brussels", page_size=8)
+    print(f"  eu: {len(eu)} cikk")
+    war = fetch_articles("Ukraine war conflict Middle East", page_size=8)
+    print(f"  war: {len(war)} cikk")
+    spain = fetch_articles("Spain España politics economy", language="es", page_size=8)
+    print(f"  spain: {len(spain)} cikk")
     return {
-        "econ":  fetch_articles("european stock market economy finance", page_size=8),
-        "eu":    fetch_articles("European Union EU politics Brussels", page_size=8),
-        "war":   fetch_articles("Ukraine war conflict Middle East", page_size=8),
-        "spain": fetch_articles("Spain España politics economy", language="es", page_size=8),
+        "econ":  econ,
+        "eu":    eu,
+        "war":   war,
+        "spain": spain,
     }
 
 
