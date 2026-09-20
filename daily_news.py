@@ -61,11 +61,14 @@ def fetch_all_news():
     print(f"  war: {len(war)} cikk")
     spain = fetch_articles("Spain España politics economy", language="es", page_size=8)
     print(f"  spain: {len(spain)} cikk")
+    tech = fetch_articles("cybersecurity ransomware data breach vulnerability hack", page_size=8)
+    print(f"  tech: {len(tech)} cikk")
     return {
         "econ":  econ,
         "eu":    eu,
         "war":   war,
         "spain": spain,
+        "tech":  tech,
     }
 
 
@@ -136,6 +139,7 @@ def get_news(date_str):
         ("eu",    "EU Europai Kozosseg"),
         ("war",   "Haborus Hirek"),
         ("spain", "Spanyol Hirek"),
+        ("tech",  "Tech es Kiberbiztonság"),
     ]
     categories = []
     for idx, (cid, ctitle) in enumerate(cats):
