@@ -27,10 +27,11 @@ CAT_COLORS = {"econ":"#1a4a6b","eu":"#2d6a4f","war":"#7b2d2d","spain":"#8B0000"}
 def fetch_articles(query, language="en", page_size=8):
     """NewsAPI-tol leker cikkeket"""
     today = datetime.date.today().isoformat()
+    yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
     url = "https://newsapi.org/v2/everything"
     params = {
         "q": query,
-        "from": today,
+        "from": yesterday,
         "to": today,
         "language": language,
         "sortBy": "publishedAt",
